@@ -10,6 +10,7 @@
     "server": "node server/index.js"
   },
   "dependencies": {
+    "axios": "^1.8.1",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "mongob": "^1.0.0",

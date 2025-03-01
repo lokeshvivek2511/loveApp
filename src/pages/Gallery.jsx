@@ -1,68 +1,101 @@
 import React, { useState, useEffect } from 'react';
+import { getAllGalleryItems, addGalleryItem, deleteGalleryItem } from '../services/api';
 import './Gallery.css';
 
 const Gallery = () => {
   const [memories, setMemories] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [newMemory, setNewMemory] = useState({
     title: '',
     date: '',
     description: '',
-    imageUrl: ''
+    image: null,
+    imagePreview: null
   });
   const [selectedMemory, setSelectedMemory] = useState(null);
   
   useEffect(() => {
-    // Load memories from localStorage
-    const savedMemories = localStorage.getItem('memories');
-    if (savedMemories) {
-      setMemories(JSON.parse(savedMemories));
-    }
+    loadMemories();
   }, []);
-  
-  const saveMemories = (updatedMemories) => {
-    setMemories(updatedMemories);
-    localStorage.setItem('memories', JSON.stringify(updatedMemories));
+
+  const loadMemories = async () => {
+    try {
+      setLoading(true);
+      const response = await getAllGalleryItems();
+      setMemories(response.data);
+      setError(null);
+    } catch (err) {
+      setError('Failed to load memories. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
   };
   
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewMemory(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    const { name, value, type, files } = e.target;
+    
+    if (type === 'file') {
+      const file = files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setNewMemory(prev => ({
+            ...prev,
+            image: reader.result,
+            imagePreview: reader.result
+          }));
+        };
+        reader.readAsDataURL(file);
+      }
+    } else {
+      setNewMemory(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
   
-  const handleAddMemory = (e) => {
+  const handleAddMemory = async (e) => {
     e.preventDefault();
     
-    if (!newMemory.title || !newMemory.imageUrl) {
-      alert('Please fill in at least the title and image URL');
+    if (!newMemory.title || !newMemory.image) {
+      alert('Please fill in at least the title and upload an image');
       return;
     }
     
-    const updatedMemories = [
-      ...memories,
-      {
-        ...newMemory,
-        id: Date.now().toString()
-      }
-    ];
-    
-    saveMemories(updatedMemories);
-    setNewMemory({
-      title: '',
-      date: '',
-      description: '',
-      imageUrl: ''
-    });
-    setShowAddForm(false);
+    try {
+      const response = await addGalleryItem({
+        title: newMemory.title,
+        description: newMemory.description,
+        image: newMemory.image,
+        date: newMemory.date
+      });
+      setMemories(prev => [response.data, ...prev]);
+      setNewMemory({
+        title: '',
+        date: '',
+        description: '',
+        image: null,
+        imagePreview: null
+      });
+      setShowAddForm(false);
+      setError(null);
+    } catch (err) {
+      setError('Failed to add memory. Please try again.');
+    }
   };
   
-  const handleDeleteMemory = (id) => {
-    const updatedMemories = memories.filter(memory => memory.id !== id);
-    saveMemories(updatedMemories);
-    setSelectedMemory(null);
+  const handleDeleteMemory = async (id) => {
+    try {
+      await deleteGalleryItem(id);
+      setMemories(prev => prev.filter(memory => memory._id !== id));
+      setSelectedMemory(null);
+      setError(null);
+    } catch (err) {
+      setError('Failed to delete memory. Please try again.');
+    }
   };
   
   const openMemoryDetails = (memory) => {
@@ -73,12 +106,18 @@ const Gallery = () => {
     setSelectedMemory(null);
   };
   
+  if (loading) {
+    return <div className="loading">Loading memories...</div>;
+  }
+
   return (
     <div className="gallery-page">
       <div className="page-header">
         <h1>Our Beautiful Memories</h1>
         <p>A collection of our special moments together</p>
       </div>
+      
+      {error && <div className="error-message">{error}</div>}
       
       <div className="gallery-actions">
         <button 
@@ -126,19 +165,19 @@ const Gallery = () => {
             </div>
             
             <div className="form-group">
-              <label>Image URL</label>
+              <label>Upload Image</label>
               <input 
-                type="url" 
-                name="imageUrl"
-                value={newMemory.imageUrl}
+                type="file" 
+                name="image"
+                accept="image/*"
                 onChange={handleInputChange}
-                placeholder="Paste the URL of your image"
                 required
               />
-            </div>
-            
-            <div className="form-note">
-              <p>💡 Tip: Upload your image to a free image hosting service like Imgur, then paste the direct link here.</p>
+              {newMemory.imagePreview && (
+                <div className="image-preview">
+                  <img src={newMemory.imagePreview} alt="Preview" />
+                </div>
+              )}
             </div>
             
             <button type="submit" className="btn submit-btn">Save Memory</button>
@@ -162,12 +201,12 @@ const Gallery = () => {
         <div className="memories-grid">
           {memories.map(memory => (
             <div 
-              key={memory.id} 
+              key={memory._id} 
               className="memory-card"
               onClick={() => openMemoryDetails(memory)}
             >
               <div className="memory-image">
-                <img src={memory.imageUrl} alt={memory.title} />
+                <img src={memory.image} alt={memory.title} />
               </div>
               <div className="memory-info">
                 <h3>{memory.title}</h3>
@@ -184,7 +223,7 @@ const Gallery = () => {
             <button className="close-btn" onClick={closeMemoryDetails}>×</button>
             
             <div className="memory-modal-image">
-              <img src={selectedMemory.imageUrl} alt={selectedMemory.title} />
+              <img src={selectedMemory.image} alt={selectedMemory.title} />
             </div>
             
             <div className="memory-modal-info">
@@ -201,7 +240,7 @@ const Gallery = () => {
               
               <button 
                 className="btn delete-btn"
-                onClick={() => handleDeleteMemory(selectedMemory.id)}
+                onClick={() => handleDeleteMemory(selectedMemory._id)}
               >
                 Delete Memory
               </button>

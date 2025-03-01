@@ -4,7 +4,6 @@ import './Home.css';
 
 const Home = () => {
   const [daysCount, setDaysCount] = useState(0);
-  const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   
   // Set your anniversary date here
@@ -20,17 +19,7 @@ const Home = () => {
     
     calculateDays();
     setIsLoading(false);
-    
-    // Load message from localStorage
-    const savedMessage = localStorage.getItem('loveMessage') || '';
-    setMessage(savedMessage);
   }, []);
-  
-  const handleMessageChange = (e) => {
-    const newMessage = e.target.value;
-    setMessage(newMessage);
-    localStorage.setItem('loveMessage', newMessage);
-  };
   
   if (isLoading) {
     return <div className="loading">Loading our love story...</div>;
@@ -69,16 +58,6 @@ const Home = () => {
           <p>Sweet messages and quotes to brighten our days</p>
           <Link to="/quotes" className="btn">View Quotes</Link>
         </div>
-      </div>
-      
-      <div className="message-box">
-        <h3>Leave a Love Note</h3>
-        <textarea 
-          value={message} 
-          onChange={handleMessageChange}
-          placeholder="Write a sweet message for your loved one..."
-        ></textarea>
-        <p className="note">Your message is saved automatically ❤️</p>
       </div>
       
       <div className="floating-hearts">

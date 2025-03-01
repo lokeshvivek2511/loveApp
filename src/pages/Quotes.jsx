@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getAllQuotes, addQuote, updateQuote, deleteQuote } from '../services/api';
 import './Quotes.css';
 
 const Quotes = () => {
@@ -10,46 +11,25 @@ const Quotes = () => {
   });
   const [showAddForm, setShowAddForm] = useState(false);
   const [filter, setFilter] = useState('all');
-  
-  // Default quotes
-  const defaultQuotes = [
-    {
-      id: '1',
-      text: "I fell in love with you because you loved me when I couldn't love myself.",
-      author: "Anonymous",
-      color: "#ff6b6b",
-      favorite: true
-    },
-    {
-      id: '2',
-      text: "In all the world, there is no heart for me like yours. In all the world, there is no love for you like mine.",
-      author: "Maya Angelou",
-      color: "#f06292",
-      favorite: false
-    },
-    {
-      id: '3',
-      text: "I love you not only for what you are, but for what I am when I am with you.",
-      author: "Roy Croft",
-      color: "#bb86fc",
-      favorite: true
-    }
-  ];
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
   useEffect(() => {
-    // Load quotes from localStorage or use defaults
-    const savedQuotes = localStorage.getItem('loveQuotes');
-    if (savedQuotes) {
-      setQuotes(JSON.parse(savedQuotes));
-    } else {
-      setQuotes(defaultQuotes);
-      localStorage.setItem('loveQuotes', JSON.stringify(defaultQuotes));
-    }
+    loadQuotes();
   }, []);
-  
-  const saveQuotes = (updatedQuotes) => {
-    setQuotes(updatedQuotes);
-    localStorage.setItem('loveQuotes', JSON.stringify(updatedQuotes));
+
+  const loadQuotes = async () => {
+    try {
+      setLoading(true);
+      const response = await getAllQuotes();
+      setQuotes(response.data);
+      setError(null);
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || 'Failed to load quotes. Please check your connection and try again.';      
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
   
   const handleInputChange = (e) => {
@@ -60,54 +40,76 @@ const Quotes = () => {
     }));
   };
   
-  const handleAddQuote = (e) => {
+  const handleAddQuote = async (e) => {
     e.preventDefault();
     
     if (!newQuote.text) {
-      alert('Please enter a quote');
+      setError('Please enter a quote');
       return;
     }
     
-    const updatedQuotes = [
-      ...quotes,
-      {
-        ...newQuote,
-        id: Date.now().toString(),
-        favorite: false
-      }
-    ];
-    
-    saveQuotes(updatedQuotes);
-    setNewQuote({
-      text: '',
-      author: '',
-      color: '#ff6b6b'
-    });
-    setShowAddForm(false);
+    try {
+      const quoteData = {
+        content: newQuote.text,
+        author: newQuote.author,
+        color: newQuote.color,
+        isFavorite: false
+      };
+      
+      const response = await addQuote(quoteData);
+      setQuotes(prev => [response.data, ...prev]);
+      setNewQuote({
+        text: '',
+        author: '',
+        color: '#ff6b6b'
+      });
+      setShowAddForm(false);
+      setError(null);
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || 'Failed to add quote. Please check your connection and try again.';
+      setError(errorMessage);
+    }
   };
   
-  const toggleFavorite = (id) => {
-    const updatedQuotes = quotes.map(quote => 
-      quote.id === id ? { ...quote, favorite: !quote.favorite } : quote
-    );
-    saveQuotes(updatedQuotes);
+  const toggleFavorite = async (id) => {
+    try {
+      const quote = quotes.find(q => q._id === id);
+      const response = await updateQuote(id, { isFavorite: !quote.isFavorite });
+      setQuotes(prev => prev.map(q => q._id === id ? response.data : q));
+      setError(null);
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || 'Failed to update quote. Please check your connection and try again.';
+      setError(errorMessage);
+    }
   };
   
-  const deleteQuote = (id) => {
-    const updatedQuotes = quotes.filter(quote => quote.id !== id);
-    saveQuotes(updatedQuotes);
+  const handleDeleteQuote = async (id) => {
+    try {
+      await deleteQuote(id);
+      setQuotes(prev => prev.filter(quote => quote._id !== id));
+      setError(null);
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || 'Failed to delete quote. Please check your connection and try again.';
+      setError(errorMessage);
+    }
   };
   
   const filteredQuotes = filter === 'all' 
     ? quotes 
-    : quotes.filter(quote => quote.favorite);
+    : quotes.filter(quote => quote.isFavorite);
   
+  if (loading) {
+    return <div className="loading">Loading quotes...</div>;
+  }
+
   return (
     <div className="quotes-page">
       <div className="page-header">
         <h1>Love Notes & Quotes</h1>
         <p>Sweet words to brighten our days</p>
       </div>
+      
+      {error && <div className="error-message">{error}</div>}
       
       <div className="quotes-actions">
         <div className="filter-buttons">
@@ -195,26 +197,26 @@ const Quotes = () => {
           <div className="quotes-grid">
             {filteredQuotes.map(quote => (
               <div 
-                key={quote.id} 
+                key={quote._id} 
                 className="quote-card"
                 style={{ backgroundColor: quote.color }}
               >
                 <div className="quote-actions">
                   <button 
                     className="favorite-btn"
-                    onClick={() => toggleFavorite(quote.id)}
+                    onClick={() => toggleFavorite(quote._id)}
                   >
-                    {quote.favorite ? '❤️' : '🤍'}
+                    {quote.isFavorite ? '❤️' : '🤍'}
                   </button>
                   <button 
                     className="delete-btn"
-                    onClick={() => deleteQuote(quote.id)}
+                    onClick={() => handleDeleteQuote(quote._id)}
                   >
                     ✕
                   </button>
                 </div>
                 <div className="quote-content">
-                  <p className="quote-text">"{quote.text}"</p>
+                  <p className="quote-text">"{quote.content}"</p>
                   {quote.author && <p className="quote-author">- {quote.author}</p>}
                 </div>
               </div>

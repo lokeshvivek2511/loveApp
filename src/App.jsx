@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route, Link, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import Home from './pages/Home';
 import Calendar from './pages/Calendar';
 import Gallery from './pages/Gallery';
 import Quotes from './pages/Quotes';
+import Login from './pages/Login';
+import Register from './pages/Register';
 import './App.css';
 
 function App() {
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const { user, logout } = useAuth();
 
   const toggleNav = () => {
     setIsNavOpen(!isNavOpen);
@@ -19,6 +23,11 @@ function App() {
         <div className="container">
           <div className="header-content">
             <h1 className="logo">Our Love Story ❤️</h1>
+            {user && (
+              <button className="logout-btn" onClick={logout}>
+                Logout
+              </button>
+            )}
             <button className="nav-toggle" onClick={toggleNav}>
               ☰
             </button>
@@ -37,10 +46,12 @@ function App() {
       <main>
         <div className="container">
           <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/gallery" element={<Gallery />} />
-            <Route path="/quotes" element={<Quotes />} />
+            <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
+            <Route path="/register" element={!user ? <Register /> : <Navigate to="/" />} />
+            <Route path="/" element={user ? <Home /> : <Navigate to="/login" />} />
+            <Route path="/calendar" element={user ? <Calendar /> : <Navigate to="/login" />} />
+            <Route path="/gallery" element={user ? <Gallery /> : <Navigate to="/login" />} />
+            <Route path="/quotes" element={user ? <Quotes /> : <Navigate to="/login" />} />
           </Routes>
         </div>
       </main>

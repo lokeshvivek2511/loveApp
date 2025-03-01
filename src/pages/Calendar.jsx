@@ -1,24 +1,31 @@
 import React, { useState, useEffect } from 'react';
+import { getAllCalendarEvents, addCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from '../services/api';
 import './Calendar.css';
 
 const Calendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
-  const [specialDates, setSpecialDates] = useState({});
+  const [events, setEvents] = useState([]);
   const [eventTitle, setEventTitle] = useState('');
   const [eventDescription, setEventDescription] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
   useEffect(() => {
-    // Load special dates from localStorage
-    const savedDates = localStorage.getItem('specialDates');
-    if (savedDates) {
-      setSpecialDates(JSON.parse(savedDates));
-    }
+    loadEvents();
   }, []);
   
-  const saveSpecialDates = (dates) => {
-    setSpecialDates(dates);
-    localStorage.setItem('specialDates', JSON.stringify(dates));
+  const loadEvents = async () => {
+    try {
+      setLoading(true);
+      const response = await getAllCalendarEvents();
+      setEvents(response.data);
+      setError(null);
+    } catch (err) {
+      setError('Failed to load events. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
   };
   
   const getDaysInMonth = (year, month) => {
@@ -46,46 +53,66 @@ const Calendar = () => {
   };
   
   const handleDateClick = (day) => {
-    const dateStr = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${day}`;
+    const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     setSelectedDate(dateStr);
     
-    // Pre-fill form if this date has an event
-    if (specialDates[dateStr]) {
-      setEventTitle(specialDates[dateStr].title);
-      setEventDescription(specialDates[dateStr].description);
+    const event = events.find(e => new Date(e.date).toISOString().split('T')[0] === dateStr);
+    if (event) {
+      setEventTitle(event.title);
+      setEventDescription(event.description || '');
     } else {
       setEventTitle('');
       setEventDescription('');
     }
   };
   
-  const handleSaveEvent = () => {
+  const handleSaveEvent = async () => {
     if (!selectedDate || !eventTitle) return;
     
-    const updatedDates = {
-      ...specialDates,
-      [selectedDate]: {
-        title: eventTitle,
-        description: eventDescription
+    try {
+      const existingEvent = events.find(e => new Date(e.date).toISOString().split('T')[0] === selectedDate);
+      
+      if (existingEvent) {
+        const response = await updateCalendarEvent(existingEvent._id, {
+          title: eventTitle,
+          description: eventDescription,
+          date: selectedDate
+        });
+        setEvents(prev => prev.map(e => e._id === existingEvent._id ? response.data : e));
+      } else {
+        const response = await addCalendarEvent({
+          title: eventTitle,
+          description: eventDescription,
+          date: selectedDate
+        });
+        setEvents(prev => [...prev, response.data]);
       }
-    };
-    
-    saveSpecialDates(updatedDates);
-    setSelectedDate(null);
-    setEventTitle('');
-    setEventDescription('');
+      
+      setSelectedDate(null);
+      setEventTitle('');
+      setEventDescription('');
+      setError(null);
+    } catch (err) {
+      setError('Failed to save event. Please try again.');
+    }
   };
   
-  const handleDeleteEvent = () => {
-    if (!selectedDate || !specialDates[selectedDate]) return;
+  const handleDeleteEvent = async () => {
+    if (!selectedDate) return;
     
-    const updatedDates = { ...specialDates };
-    delete updatedDates[selectedDate];
+    const event = events.find(e => new Date(e.date).toISOString().split('T')[0] === selectedDate);
+    if (!event) return;
     
-    saveSpecialDates(updatedDates);
-    setSelectedDate(null);
-    setEventTitle('');
-    setEventDescription('');
+    try {
+      await deleteCalendarEvent(event._id);
+      setEvents(prev => prev.filter(e => e._id !== event._id));
+      setSelectedDate(null);
+      setEventTitle('');
+      setEventDescription('');
+      setError(null);
+    } catch (err) {
+      setError('Failed to delete event. Please try again.');
+    }
   };
   
   const renderCalendar = () => {
@@ -98,27 +125,25 @@ const Calendar = () => {
     
     const days = [];
     
-    // Add empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
       days.push(<div key={`empty-${i}`} className="calendar-day empty"></div>);
     }
     
-    // Add cells for each day of the month
     for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = `${year}-${month + 1}-${day}`;
-      const isSpecial = specialDates[dateStr] ? true : false;
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const event = events.find(e => new Date(e.date).toISOString().split('T')[0] === dateStr);
       const isToday = new Date().toDateString() === new Date(year, month, day).toDateString();
       
       days.push(
         <div 
           key={day} 
-          className={`calendar-day ${isSpecial ? 'special' : ''} ${isToday ? 'today' : ''}`}
+          className={`calendar-day ${event ? 'special' : ''} ${isToday ? 'today' : ''}`}
           onClick={() => handleDateClick(day)}
         >
           <span className="day-number">{day}</span>
-          {isSpecial && (
+          {event && (
             <div className="event-indicator">
-              <span className="event-title">{specialDates[dateStr].title}</span>
+              <span className="event-title">{event.title}</span>
             </div>
           )}
         </div>
@@ -150,12 +175,18 @@ const Calendar = () => {
     );
   };
   
+  if (loading) {
+    return <div className="loading">Loading calendar...</div>;
+  }
+  
   return (
     <div className="calendar-page">
       <div className="page-header">
         <h1>Our Special Dates</h1>
         <p>Mark all the important moments in our journey together</p>
       </div>
+      
+      {error && <div className="error-message">{error}</div>}
       
       <div className="calendar-content">
         {renderCalendar()}
@@ -185,7 +216,7 @@ const Calendar = () => {
               
               <div className="form-actions">
                 <button className="btn save-btn" onClick={handleSaveEvent}>Save</button>
-                {specialDates[selectedDate] && (
+                {events.find(e => new Date(e.date).toISOString().split('T')[0] === selectedDate) && (
                   <button className="btn delete-btn" onClick={handleDeleteEvent}>Delete</button>
                 )}
                 <button className="btn cancel-btn" onClick={() => setSelectedDate(null)}>Cancel</button>
