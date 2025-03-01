@@ -64,7 +64,7 @@ const Register = () => {
       <div className="auth-box">
         <div className="heart-animation">❤️</div>
         <h2>Start Your Love Story</h2>
-        <p className="subtitle">Create an account for you and your partner</p>
+        <p className="subtitle">Create an joint account for you and your partner.</p>
         
         {error && <div className="error-message">{error}</div>}
         
