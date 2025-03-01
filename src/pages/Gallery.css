@@ -1,0 +1,255 @@
+.gallery-page {
+  padding: 20px 0;
+}
+
+.gallery-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+
+.add-memory-btn {
+  background-color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.add-memory-form {
+  background-color: white;
+  padding: 30px;
+  border-radius: 15px;
+  margin-bottom: 30px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  animation: slide-down 0.3s ease;
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.add-memory-form h3 {
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 1.8rem;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-family: inherit;
+}
+
+.form-group textarea {
+  height: 100px;
+  resize: none;
+}
+
+.form-note {
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 5px;
+  font-size: 0.9rem;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+}
+
+.empty-gallery {
+  text-align: center;
+  padding: 50px 0;
+  background-color: white;
+  border-radius: 15px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+.empty-gallery h3 {
+  font-size: 1.8rem;
+  margin-bottom: 10px;
+}
+
+.empty-gallery p {
+  margin-bottom: 20px;
+  color: #666;
+}
+
+.memories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.memory-card {
+  background-color: white;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.memory-card:hover {
+  transform: translateY(-10px);
+}
+
+.memory-image {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+}
+
+.memory-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.memory-card:hover .memory-image img {
+  transform: scale(1.1);
+}
+
+.memory-info {
+  padding: 15px;
+}
+
+.memory-info h3 {
+  font-size: 1.2rem;
+  margin-bottom: 5px;
+}
+
+.memory-date {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.memory-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fade-in 0.3s ease;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.memory-modal-content {
+  background-color: white;
+  border-radius: 15px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow: auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 2rem;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  z-index: 10;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+.memory-modal-image {
+  width: 100%;
+  height: 400px;
+}
+
+.memory-modal-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.memory-modal-info {
+  padding: 20px;
+}
+
+.memory-modal-info h2 {
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+.memory-description {
+  margin: 20px 0;
+  line-height: 1.6;
+}
+
+.delete-btn {
+  background-color: #ff4757;
+  margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+  .memories-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+  
+  .memory-image {
+    height: 150px;
+  }
+  
+  .memory-modal-image {
+    height: 250px;
+  }
+}
