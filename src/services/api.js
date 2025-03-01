@@ -15,6 +15,7 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
+        console.log("Using Token in API Call:", token); // ✅ Debugging token
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -47,6 +48,8 @@ export const register = async (userData) => {
   try {
     const response = await api.post("/auth/register", userData);
     localStorage.setItem("token", response.data.token); // ✅ Save token after register
+        console.log("register:", response.data.token); // ✅ Debugging token
+
     return response.data;
   } catch (error) {
     throw error;
