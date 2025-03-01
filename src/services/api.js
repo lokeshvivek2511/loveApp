@@ -1,85 +1,170 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_URL = 'https://loveappbackend.netlify.app/api';
+// ✅ Use environment variable for API URL (Works with Vite & Netlify)
+const API_URL = import.meta.env.VITE_API_URL || "https://loveappbackend.netlify.app/api";
 
-// Create axios instance with base configuration
+// ✅ Create axios instance with base configuration
 const api = axios.create({
   baseURL: API_URL,
   headers: {
-    'Content-Type': 'application/json'
-  }
+    "Content-Type": "application/json",
+  },
 });
 
-// Add request interceptor to include auth token
+// ✅ Add request interceptor to include auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
+  (error) => Promise.reject(error)
+);
+
+// ✅ Add response interceptor to handle errors globally
+api.interceptors.response.use(
+  (response) => response,
   (error) => {
+    console.error("API Error:", error.response?.data || error.message);
     return Promise.reject(error);
   }
 );
 
-// Auth API calls
-export const login = (credentials) => {
-  return api.post('/auth/login', credentials);
+// 🔹 Auth API calls
+export const login = async (credentials) => {
+  try {
+    const response = await api.post("/auth/login", credentials);
+    localStorage.setItem("token", response.data.token); // ✅ Save token after login
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-export const register = (userData) => {
-  return api.post('/auth/register', userData);
+export const register = async (userData) => {
+  try {
+    const response = await api.post("/auth/register", userData);
+    localStorage.setItem("token", response.data.token); // ✅ Save token after register
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-// Gallery API calls
-export const getAllGalleryItems = () => {
-  return api.get('/gallery');
+// 🔹 Gallery API calls
+export const getAllGalleryItems = async () => {
+  try {
+    const response = await api.get("/gallery");
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-export const addGalleryItem = (itemData) => {
-  return api.post('/gallery', itemData);
+export const addGalleryItem = async (itemData) => {
+  try {
+    const response = await api.post("/gallery", itemData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-export const updateGalleryItem = (id, itemData) => {
-  return api.put(`/gallery/${id}`, itemData);
+export const updateGalleryItem = async (id, itemData) => {
+  try {
+    const response = await api.put(`/gallery/${id}`, itemData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-export const deleteGalleryItem = (id) => {
-  return api.delete(`/gallery/${id}`);
+export const deleteGalleryItem = async (id) => {
+  try {
+    const response = await api.delete(`/gallery/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-// Calendar API calls
-export const getAllCalendarEvents = () => {
-  return api.get('/calendar');
+// 🔹 Calendar API calls
+export const getAllCalendarEvents = async () => {
+  try {
+    const response = await api.get("/calendar");
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-export const addCalendarEvent = (eventData) => {
-  return api.post('/calendar', eventData);
+export const addCalendarEvent = async (eventData) => {
+  try {
+    const response = await api.post("/calendar", eventData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-export const updateCalendarEvent = (id, eventData) => {
-  return api.put(`/calendar/${id}`, eventData);
+export const updateCalendarEvent = async (id, eventData) => {
+  try {
+    const response = await api.put(`/calendar/${id}`, eventData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-export const deleteCalendarEvent = (id) => {
-  return api.delete(`/calendar/${id}`);
+export const deleteCalendarEvent = async (id) => {
+  try {
+    const response = await api.delete(`/calendar/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-// Quotes API calls
-export const getAllQuotes = () => {
-  return api.get('/quotes');
+// 🔹 Quotes API calls
+export const getAllQuotes = async () => {
+  try {
+    const response = await api.get("/quotes");
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-export const addQuote = (quoteData) => {
-  return api.post('/quotes', quoteData);
+export const addQuote = async (quoteData) => {
+  try {
+    const response = await api.post("/quotes", quoteData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-export const updateQuote = (id, quoteData) => {
-  return api.put(`/quotes/${id}`, quoteData);
+export const updateQuote = async (id, quoteData) => {
+  try {
+    const response = await api.put(`/quotes/${id}`, quoteData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-export const deleteQuote = (id) => {
-  return api.delete(`/quotes/${id}`);
+export const deleteQuote = async (id) => {
+  try {
+    const response = await api.delete(`/quotes/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// 🔹 Logout Function
+export const logout = () => {
+  localStorage.removeItem("token"); // ✅ Remove token on logout
 };
